@@ -1,7 +1,7 @@
 ---
 title: "Bayesian Hierarchical Modeling with brms"
 author: "Teresa Bohner"
-date: "January 29, 2021"
+date: "Feb 5, 2021"
 output:
   xaringan::moon_reader:
     css: ["default", "rladies-fonts"]
@@ -84,10 +84,10 @@ summary(f1.1)
 # Linear regression
 From OLS we obtain **point estimates** of our parameters
 
-From Bayesian analysis we obtain probability distributions or the **posterior** because of Bayes' rule":
+From Bayesian analysis we obtain probability distributions or the **posterior** because of Bayes' rule:
 
 $$
-P(\theta||data) \propto P(data|\theta) \times P(\theta)
+P(\theta|data) = \frac{P(data|\theta) \times P(\theta)}{P(data)}
 $$
 Or: 
 
@@ -111,7 +111,7 @@ install.packages("brms")
 
 ---
 # Bayesian Linear regression
-### function(Response ~ predictor, data)
+### Response ~ predictor
 
 Remember frequentist implementation:
 ```{r ols1-revisit}
@@ -293,13 +293,13 @@ b2.1 <- readRDS("saved models/b2.1.rds")
 ```
 
 ---
-# No Pooling
+# No pooling
 ```{r nopool}
 summary(b2.1)
 ```
 
 ---
-# Complete Pooling
+# Complete pooling
 But what if we're more interested in the general relationship between X and Y for an average group? What happens when we ignore the group?
 ```{r b2.2, eval=F}
 b2.2 <- brm(Y ~ X , data=sim.data,
@@ -317,6 +317,7 @@ summary(b2.2)
 
 ---
 # Partial pooling
+### Response ~ pterms + (gterms|group)
 ```{r b2.3, eval=F}
 b2.3 <- brm(Y ~ X + (1|group), data=sim.data,
             chains=4, iter=2000, cores=4)
@@ -356,7 +357,7 @@ ggplot(pp_params, aes(y = group, x = est_b0, xmin = est_b0.lower, xmax = est_b0.
   
 ```
 ---
-# One way to do model selection
+# Model selection and weighting
 ```{r waic}
 # compute and save the WAIC information for the next three models
 b2.1 <- add_criterion(b2.1, "waic")
@@ -376,16 +377,36 @@ model_weights(b2.1, b2.2, b2.3,
 ```
 ---
 # Posterior predictions
-```{r post-pred}
+```{r post-pred, fig.height=5, fig.width=8}
 set.seed(123)
 newdata <- data.frame(
   X = 0)
 
-ppred <- add_predicted_draws(newdata, b2.3, re_formula = NULL, allow_new_levels=T) %>% 
+ppred <- add_predicted_draws(newdata, b2.3, re_formula = NA, allow_new_levels=T) %>% 
   mutate(model="pp") %>% 
   bind_rows(add_predicted_draws(newdata, b2.2) %>% mutate(model="cp") )
 
 ggplot(ppred) +
-  geom_density(aes(.prediction, color=model))
+  geom_density(aes(.prediction, color=model)) + 
+  theme_test()
   
 ```
+
+
+
+---
+# This is the tip of the iceberg
+```{r, echo=FALSE}
+knitr::include_graphics("brms-screenshot.png")
+```
+
+---
+# Additional resources
+[Multiple brms vignettes](https://cran.r-project.org/web/packages/brms/index.html) 
+
+[More tidybayes info](http://mjskay.github.io/tidybayes/)
+
+[Statistical rethinking recoded](https://bookdown.org/ajkurz/Statistical_Rethinking_recoded/)
+
+[A really approachable MLM paper](https://doi.org/10.1044/2018_JSLHR-S-18-0006)
+

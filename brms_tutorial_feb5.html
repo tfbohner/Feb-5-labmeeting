@@ -4,7 +4,6 @@
     <title>Bayesian Hierarchical Modeling with brms</title>
     <meta charset="utf-8" />
     <meta name="author" content="Teresa Bohner" />
-    <meta name="date" content="2021-01-29" />
     <script src="brms_tutorial_feb5_files/header-attrs/header-attrs.js"></script>
     <link href="brms_tutorial_feb5_files/remark-css/default.css" rel="stylesheet" />
     <link href="brms_tutorial_feb5_files/remark-css/rladies-fonts.css" rel="stylesheet" />
@@ -17,7 +16,7 @@ class: center, middle, inverse, title-slide
 
 # Bayesian Hierarchical Modeling with brms
 ### Teresa Bohner
-### January 29, 2021
+### Feb 5, 2021
 
 ---
 
@@ -165,10 +164,10 @@ summary(f1.1)
 # Linear regression
 From OLS we obtain **point estimates** of our parameters
 
-From Bayesian analysis we obtain probability distributions or the **posterior** because of Bayes' rule":
+From Bayesian analysis we obtain probability distributions or the **posterior** because of Bayes' rule:
 
 $$
-P(\theta||data) \propto P(data|\theta) \times P(\theta)
+P(\theta|data) = \frac{P(data|\theta) \times P(\theta)}{P(data)}
 $$
 Or: 
 
@@ -193,7 +192,7 @@ install.packages("brms")
 
 ---
 # Bayesian Linear regression
-### function(Response ~ predictor, data)
+### Response ~ predictor
 
 Remember frequentist implementation:
 
@@ -441,7 +440,7 @@ saveRDS(b2.1, "saved models/b2.1.rds")
 
 
 ---
-# No Pooling
+# No pooling
 
 ```r
 summary(b2.1)
@@ -479,7 +478,7 @@ summary(b2.1)
 ```
 
 ---
-# Complete Pooling
+# Complete pooling
 But what if we're more interested in the general relationship between X and Y for an average group? What happens when we ignore the group?
 
 ```r
@@ -519,6 +518,7 @@ summary(b2.2)
 
 ---
 # Partial pooling
+### Response ~ pterms + (gterms|group)
 
 ```r
 b2.3 &lt;- brm(Y ~ X + (1|group), data=sim.data,
@@ -564,7 +564,7 @@ summary(b2.3)
 # No pooling versus partial pooling
 &lt;img src="brms_tutorial_feb5_files/figure-html/compare-1.png" width="576" /&gt;
 ---
-# One way to do model selection
+# Model selection and weighting
 
 ```r
 # compute and save the WAIC information for the next three models
@@ -605,15 +605,33 @@ set.seed(123)
 newdata &lt;- data.frame(
   X = 0)
 
-ppred &lt;- add_predicted_draws(newdata, b2.3, re_formula = NULL, allow_new_levels=T) %&gt;% 
+ppred &lt;- add_predicted_draws(newdata, b2.3, re_formula = NA, allow_new_levels=T) %&gt;% 
   mutate(model="pp") %&gt;% 
   bind_rows(add_predicted_draws(newdata, b2.2) %&gt;% mutate(model="cp") )
 
 ggplot(ppred) +
-  geom_density(aes(.prediction, color=model))
+  geom_density(aes(.prediction, color=model)) + 
+  theme_test()
 ```
 
-&lt;img src="brms_tutorial_feb5_files/figure-html/post-pred-1.png" width="504" /&gt;
+&lt;img src="brms_tutorial_feb5_files/figure-html/post-pred-1.png" width="576" /&gt;
+
+
+
+---
+# This is the tip of the iceberg
+&lt;img src="brms-screenshot.png" width="546" /&gt;
+
+---
+# Additional resources
+[Multiple brms vignettes](https://cran.r-project.org/web/packages/brms/index.html) 
+
+[More tidybayes info](http://mjskay.github.io/tidybayes/)
+
+[Statistical rethinking recoded](https://bookdown.org/ajkurz/Statistical_Rethinking_recoded/)
+
+[A really approachable MLM paper](https://doi.org/10.1044/2018_JSLHR-S-18-0006)
+
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
