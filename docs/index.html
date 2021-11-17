@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Bayesian Hierarchical Modeling with brms</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Teresa Bohner" />
+    <script src="index_files/header-attrs/header-attrs.js"></script>
+    <link href="index_files/remark-css/default.css" rel="stylesheet" />
+    <link href="index_files/remark-css/rladies-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Bayesian Hierarchical Modeling with brms
+### Teresa Bohner
+### Feb 5, 2021
+
+---
+
+
+# What I plan to cover: 
+**Heads Up!!** This will be application focused and not an in-depth explanation of Bayesian statistics
+- Key differences between Frequentist and Bayesian approaches
+- How do we implement Bayesian models in R?
+- What is a hierarchical model anyways?
+- Resources for further reading
+
+
+&lt;!--
+- Compile from command-line
+Rscript -e "knitr::knit('brms_tutorial_feb5.Rmd', tangle=TRUE)"
+--&gt;
+
+
+```r
+library(tidyverse)
+library(brms)
+library(tidybayes)
+```
+
+
+
+&lt;!--
+- Compile from command-line
+Rscript -e "knitr::knit('r_ladies_ggplot_nov.Rmd', tangle=TRUE)"
+--&gt;
+
+
+---
+# Linear regression
+$$
+y= \beta_0 + \beta_1x +\epsilon
+$$
+Let's simulate some data: 
+
+```r
+nrep = 100
+b0 = 5
+b1 = -2
+sd = 2
+
+set.seed(123)
+sim.data &lt;- tibble(X = rnorm(nrep, 0, 1)) %&gt;% 
+  mutate(eps = rnorm(n = nrep, mean = 0, sd = sd),
+         Y = b0 + b1*X + eps)
+
+kableExtra::kable(head(sim.data))
+```
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:right;"&gt; X &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; eps &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Y &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; -0.5604756 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.4208131 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.700138 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; -0.2301775 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5137674 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.974122 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1.5587083 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.4933838 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.389200 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 0.0705084 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6950852 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.163898 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 0.1292877 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.9032371 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.838187 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1.7150650 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.0900554 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.479815 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+# Linear regression
+
+
+```r
+ggplot(sim.data, aes(X, Y)) +
+  geom_point() +
+  geom_smooth(method='lm') +
+  theme_test()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/lm1-plot-1.png" width="576" /&gt;
+
+---
+# Linear regression
+### Frequentist (OLS)
+### function(Response ~ predictor, data)
+
+```r
+f1.1 &lt;- lm(Y~X, data=sim.data) 
+summary(f1.1)
+```
+
+```
+## 
+## Call:
+## lm(formula = Y ~ X, data = sim.data)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -3.815 -1.367 -0.175  1.161  6.581 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   4.7944     0.1951  24.574  &lt; 2e-16 ***
+## X            -2.1049     0.2138  -9.847  2.6e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.941 on 98 degrees of freedom
+## Multiple R-squared:  0.4974,	Adjusted R-squared:  0.4922 
+## F-statistic: 96.97 on 1 and 98 DF,  p-value: 2.595e-16
+```
+
+---
+# Linear regression
+From OLS we obtain **point estimates** of our parameters
+
+From Bayesian analysis we obtain probability distributions or the **posterior** because of Bayes' rule:
+
+$$
+P(\theta|data) = \frac{P(data|\theta) \times P(\theta)}{P(data)}
+$$
+Or: 
+
+$$
+Posterior \propto Likelihood \times Prior
+$$
+--
+This is often an analytically intractable problem so we use algorithms for sampling from a probability distribution. **MCMC** is a popular one **HMC** converge more rapidly. There are many software implementations of these algorithms. 
+
+Here I will focus on the R package **'brms'** which uses the program **Stan** in the background 
+
+---
+# Installing brms and Stan
+
+
+```r
+install.packages("brms")
+```
+
+--
+###Did anyone have problems?
+
+---
+# Bayesian Linear regression
+### Response ~ predictor
+
+Remember frequentist implementation:
+
+```r
+f1.1 &lt;- lm(Y~X, data=sim.data) 
+```
+
+--
+Look similar?
+
+
+```r
+b1.1 &lt;- brm(Y~X, data=sim.data,
+          chains=4, iter=2000, cores=4) 
+
+saveRDS(b1.1, "saved models/b1.1.rds") ## if you want to save your model and come back to it
+```
+
+```r
+b1.1 &lt;- readRDS("saved models/b1.1.rds") ## load your saved model
+```
+R may seem slow at first because the model is being compiled to C++ via Stan, sampling will start momentarily.
+
+---
+# Linear regression
+### Bayesian
+Our output looks a little different than our OLS output
+
+```r
+summary(b1.1)
+```
+
+```
+##  Family: gaussian 
+##   Links: mu = identity; sigma = identity 
+## Formula: Y ~ X 
+##    Data: sim.data (Number of observations: 100) 
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
+## 
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## Intercept     4.80      0.20     4.41     5.19 1.00     3640     3015
+## X            -2.11      0.22    -2.54    -1.67 1.00     3755     2542
+## 
+## Family Specific Parameters: 
+##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sigma     1.96      0.14     1.71     2.27 1.00     3980     3226
+## 
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+## and Tail_ESS are effective sample size measures, and Rhat is the potential
+## scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+---
+# What just happened?
+
+```r
+stancode(b1.1)
+```
+
+```
+## // generated with brms 2.13.5
+## functions {
+## }
+## data {
+##   int&lt;lower=1&gt; N;  // number of observations
+##   vector[N] Y;  // response variable
+##   int&lt;lower=1&gt; K;  // number of population-level effects
+##   matrix[N, K] X;  // population-level design matrix
+##   int prior_only;  // should the likelihood be ignored?
+## }
+## transformed data {
+##   int Kc = K - 1;
+##   matrix[N, Kc] Xc;  // centered version of X without an intercept
+##   vector[Kc] means_X;  // column means of X before centering
+##   for (i in 2:K) {
+##     means_X[i - 1] = mean(X[, i]);
+##     Xc[, i - 1] = X[, i] - means_X[i - 1];
+##   }
+## }
+## parameters {
+##   vector[Kc] b;  // population-level effects
+##   real Intercept;  // temporary intercept for centered predictors
+##   real&lt;lower=0&gt; sigma;  // residual SD
+## }
+## transformed parameters {
+## }
+## model {
+##   // priors including all constants
+##   target += student_t_lpdf(Intercept | 3, 4.7, 2.6);
+##   target += student_t_lpdf(sigma | 3, 0, 2.6)
+##     - 1 * student_t_lccdf(0 | 3, 0, 2.6);
+##   // likelihood including all constants
+##   if (!prior_only) {
+##     target += normal_id_glm_lpdf(Y | Xc, Intercept, b, sigma);
+##   }
+## }
+## generated quantities {
+##   // actual population-level intercept
+##   real b_Intercept = Intercept - dot_product(means_X, b);
+## }
+```
+
+---
+# Did we recover our true parameters?
+
+```
+## Warning: Removed 1 rows containing missing values (geom_segment).
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/params1-1.png" width="576" /&gt;
+
+---
+# Here's another look at the posterior
+plus a quick look at what you can do with tidybayes
+
+```r
+tidybayes::gather_draws(b1.1, b_Intercept, b_X, sigma) %&gt;% 
+  ggplot(aes(x=.value, y=.variable)) +
+  stat_halfeye(.width = c(.90, .5)) +
+  theme_test() +
+  xlab("Variable") + ylab("Value") 
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/post-1.png" width="576" /&gt;
+
+---
+# Just for fun
+try playing around with all of the posterior draws and variables for this super simple model to try and get an appreciation of what the few lines of code from the slide before do. 
+
+```r
+draws &lt;- as.mcmc(b1.1, combine_chains = T) ## I combined the chains but you can keep them separate
+```
+
+```
+## Warning: as.mcmc.brmsfit is deprecated and will eventually be removed.
+```
+
+```r
+dim(draws)
+```
+
+```
+## [1] 4000    4
+```
+
+---
+# Model diagnostics
+### Traceplots
+
+```r
+plot(b1.1)
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/b1.1-trace-1.png" width="576" /&gt;
+
+---
+# Model diagnostics
+### Visual posterior predictive checks
+
+```r
+pp_check(b1.1)
+```
+
+```
+## Using 10 posterior draws for ppc type 'dens_overlay' by default.
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/b1.1-pp-1.png" width="576" /&gt;
+
+---
+# A bit about priors
+Brms sets default priors, but you can easily specify exactly what you want. 
+
+```r
+prior_summary(b1.1)
+```
+
+```
+##                   prior     class coef group resp dpar nlpar bound       source
+##                  (flat)         b                                     (unknown)
+##                  (flat)         b    X                             (vectorized)
+##  student_t(3, 4.7, 2.6) Intercept                                     (unknown)
+##    student_t(3, 0, 2.6)     sigma                                     (unknown)
+```
+
+
+```r
+prior1 &lt;- prior(normal(-2,0.1), class=b)
+# make_stancode(Y~0 + Intercept + X, data=sim.data, prior=prior1, family = gaussian)
+
+b1.2 &lt;- brm(Y~X, data=sim.data, prior=prior1,
+          chains=4, iter=2000, cores=4) 
+saveRDS(b1.2, "saved models/b1.2.rds")
+```
+
+```r
+b1.2 &lt;- readRDS("saved models/b1.2.rds")
+```
+---
+# Priors continued
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/prior4-1.png" width="576" /&gt;
+
+---
+# Hierarchical (grouped) data
+Lets simulate some new data with records for different groups. Here I'm simulating data for groups that pretty high data representation (n=50).
+
+
+```r
+ngroup = 10
+group_rep = rep(50, ngroup)
+
+mu_b0 = 5 ## mean of distribution from which plot level intercepts will be drawn
+sd_b0 = 0.4 ## sd of distribution from which plot level intercepts will be drawn
+b1 = -2 ## slope
+sd = .8 ## residual sd
+
+set.seed(123)
+params &lt;- tibble(group = LETTERS[seq( from = 1, to = ngroup)],
+                 b0 = rnorm(ngroup, mu_b0, sd_b0),
+                 nrep=group_rep) 
+
+set.seed(123)
+sim.data &lt;- params %&gt;% 
+  expand_grid(group_n = 1:max(group_rep)) %&gt;% 
+  mutate(X = rnorm(sum(group_rep), 0, 1),
+         eps = rnorm(n = sum(group_rep), mean = 0, sd = sd),
+         Y = b0 + b1*X + eps)
+```
+
+---
+# Hierarchical (grouped) data
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/dataplot-1.png" width="576" /&gt;
+
+---
+# No pooling
+There are a few approaches one could take. Here in this case we might be more interested in the relationship between X and Y, but we know that grouping will likely have some effect. First we will take a look at what happens when we treat each plot as independent (fixed effect is one way to think about this),
+
+
+```r
+b2.1 &lt;- brm(Y ~ X + group, data=sim.data,
+            chains=4, iter=2000, cores=4)
+
+saveRDS(b2.1, "saved models/b2.1.rds") 
+```
+
+
+---
+# No pooling
+
+```r
+summary(b2.1)
+```
+
+```
+##  Family: gaussian 
+##   Links: mu = identity; sigma = identity 
+## Formula: Y ~ X + group 
+##    Data: sim.data (Number of observations: 500) 
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
+## 
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## Intercept     4.80      0.11     4.57     5.03 1.00     1408     1947
+## X            -2.04      0.04    -2.11    -1.96 1.00     7043     3005
+## groupB        0.03      0.16    -0.30     0.34 1.00     2075     3028
+## groupC        0.69      0.16     0.37     1.00 1.00     1913     2550
+## groupD        0.12      0.16    -0.20     0.43 1.00     2079     2803
+## groupE        0.42      0.16     0.10     0.74 1.00     2122     2792
+## groupF        0.90      0.16     0.58     1.22 1.00     2075     2902
+## groupG        0.38      0.16     0.06     0.69 1.00     2150     2572
+## groupH       -0.15      0.16    -0.48     0.15 1.00     1881     2404
+## groupI        0.01      0.16    -0.31     0.31 1.00     1984     2800
+## groupJ       -0.08      0.16    -0.40     0.24 1.00     1946     2735
+## 
+## Family Specific Parameters: 
+##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sigma     0.81      0.03     0.76     0.86 1.00     7116     2915
+## 
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+## and Tail_ESS are effective sample size measures, and Rhat is the potential
+## scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+---
+# Complete pooling
+But what if we're more interested in the general relationship between X and Y for an average group? What happens when we ignore the group?
+
+```r
+b2.2 &lt;- brm(Y ~ X , data=sim.data,
+            chains=4, iter=2000, cores=4)
+
+saveRDS(b2.2, "saved models/b2.2.rds") 
+```
+
+
+
+```r
+summary(b2.2)
+```
+
+```
+##  Family: gaussian 
+##   Links: mu = identity; sigma = identity 
+## Formula: Y ~ X 
+##    Data: sim.data (Number of observations: 500) 
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
+## 
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## Intercept     5.03      0.04     4.95     5.11 1.00     3955     2888
+## X            -2.04      0.04    -2.12    -1.96 1.00     3319     2757
+## 
+## Family Specific Parameters: 
+##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sigma     0.87      0.03     0.82     0.92 1.00     3799     2984
+## 
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+## and Tail_ESS are effective sample size measures, and Rhat is the potential
+## scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+---
+# Partial pooling
+### Response ~ pterms + (gterms|group)
+
+```r
+b2.3 &lt;- brm(Y ~ X + (1|group), data=sim.data,
+            chains=4, iter=2000, cores=4)
+
+saveRDS(b2.3, "saved models/b2.3.rds") 
+```
+
+
+
+```r
+summary(b2.3)
+```
+
+```
+##  Family: gaussian 
+##   Links: mu = identity; sigma = identity 
+## Formula: Y ~ X + (1 | group) 
+##    Data: sim.data (Number of observations: 500) 
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
+## 
+## Group-Level Effects: 
+## ~group (Number of levels: 10) 
+##               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sd(Intercept)     0.38      0.12     0.22     0.67 1.01      873     1349
+## 
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## Intercept     5.04      0.13     4.76     5.32 1.00      851     1246
+## X            -2.04      0.04    -2.11    -1.97 1.00     3933     2922
+## 
+## Family Specific Parameters: 
+##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sigma     0.81      0.03     0.76     0.87 1.00     4015     2803
+## 
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+## and Tail_ESS are effective sample size measures, and Rhat is the potential
+## scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+---
+# No pooling versus partial pooling
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/compare-1.png" width="576" /&gt;
+---
+# Model selection and weighting
+
+```r
+# compute and save the WAIC information for the next three models
+b2.1 &lt;- add_criterion(b2.1, "waic")
+b2.2 &lt;- add_criterion(b2.2, "waic")
+b2.3 &lt;- add_criterion(b2.3, "waic")
+
+# compare the WAIC estimates
+w &lt;- loo_compare(b2.1, b2.2, b2.3,
+                 criterion = "waic")
+
+cbind(waic_diff = w[, 1] * -2,
+      se        = w[, 2] * 2)
+```
+
+```
+##       waic_diff        se
+## b2.3  0.0000000  0.000000
+## b2.1  0.6914252  1.850619
+## b2.2 62.3652771 15.438956
+```
+
+```r
+model_weights(b2.1, b2.2, b2.3, 
+              weights = "waic")  %&gt;% 
+  round(digits = 2)
+```
+
+```
+## b2.1 b2.2 b2.3 
+## 0.41 0.00 0.59
+```
+---
+# Posterior predictions
+
+```r
+set.seed(123)
+newdata &lt;- data.frame(
+  X = 0)
+
+ppred &lt;- add_predicted_draws(newdata, b2.3, re_formula = NA, allow_new_levels=T) %&gt;% 
+  mutate(model="pp") %&gt;% 
+  bind_rows(add_predicted_draws(newdata, b2.2) %&gt;% mutate(model="cp") )
+
+ggplot(ppred) +
+  geom_density(aes(.prediction, color=model)) + 
+  theme_test()
+```
+
+&lt;img src="/Volumes/GoogleDrive/My Drive/Teaching/Bayesian brms/Feb-5-labmeeting/docs/index_files/figure-html/post-pred-1.png" width="576" /&gt;
+
+
+
+---
+# This is the tip of the iceberg
+&lt;img src="brms-screenshot.png" width="546" /&gt;
+
+---
+# Additional resources
+[Multiple brms vignettes](https://cran.r-project.org/web/packages/brms/index.html) 
+
+[More tidybayes info](http://mjskay.github.io/tidybayes/)
+
+[Statistical rethinking recoded](https://bookdown.org/ajkurz/Statistical_Rethinking_recoded/)
+
+[A really approachable MLM paper](https://doi.org/10.1044/2018_JSLHR-S-18-0006)
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightLines": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

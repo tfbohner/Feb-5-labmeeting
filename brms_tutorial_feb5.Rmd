@@ -1,5 +1,10 @@
 ---
 title: "Bayesian Hierarchical Modeling with brms"
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Teresa Bohner"
 date: "Feb 5, 2021"
 output:
@@ -377,7 +382,7 @@ model_weights(b2.1, b2.2, b2.3,
 ```
 ---
 # Posterior predictions
-```{r post-pred, fig.height=5, fig.width=8}
+```{r post-pred, fig.height=4, fig.width=8}
 set.seed(123)
 newdata <- data.frame(
   X = 0)
