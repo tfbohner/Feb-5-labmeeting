@@ -7,8 +7,6 @@
     <script src="brms_tutorial_feb5_files/header-attrs/header-attrs.js"></script>
     <link href="brms_tutorial_feb5_files/remark-css/default.css" rel="stylesheet" />
     <link href="brms_tutorial_feb5_files/remark-css/rladies-fonts.css" rel="stylesheet" />
-    <link href="brms_tutorial_feb5_files/anchor-sections/anchor-sections.css" rel="stylesheet" />
-    <script src="brms_tutorial_feb5_files/anchor-sections/anchor-sections.js"></script>
   </head>
   <body>
     <textarea id="source">
@@ -230,8 +228,8 @@ summary(b1.1)
 ##   Links: mu = identity; sigma = identity 
 ## Formula: Y ~ X 
 ##    Data: sim.data (Number of observations: 100) 
-## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-##          total post-warmup samples = 4000
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -240,9 +238,9 @@ summary(b1.1)
 ## 
 ## Family Specific Parameters: 
 ##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-## sigma     1.96      0.14     1.71     2.27 1.00     3981     3226
+## sigma     1.96      0.14     1.71     2.27 1.00     3980     3226
 ## 
-## Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 ## and Tail_ESS are effective sample size measures, and Rhat is the potential
 ## scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
@@ -326,6 +324,13 @@ try playing around with all of the posterior draws and variables for this super 
 
 ```r
 draws &lt;- as.mcmc(b1.1, combine_chains = T) ## I combined the chains but you can keep them separate
+```
+
+```
+## Warning: as.mcmc.brmsfit is deprecated and will eventually be removed.
+```
+
+```r
 dim(draws)
 ```
 
@@ -352,7 +357,7 @@ pp_check(b1.1)
 ```
 
 ```
-## Using 10 posterior samples for ppc type 'dens_overlay' by default.
+## Using 10 posterior draws for ppc type 'dens_overlay' by default.
 ```
 
 &lt;img src="brms_tutorial_feb5_files/figure-html/b1.1-pp-1.png" width="576" /&gt;
@@ -366,11 +371,11 @@ prior_summary(b1.1)
 ```
 
 ```
-##                    prior     class coef group resp dpar nlpar bound
-## 1                                b                                 
-## 2                                b    X                            
-## 3 student_t(3, 4.7, 2.6) Intercept                                 
-## 4   student_t(3, 0, 2.6)     sigma
+##                   prior     class coef group resp dpar nlpar bound       source
+##                  (flat)         b                                     (unknown)
+##                  (flat)         b    X                             (vectorized)
+##  student_t(3, 4.7, 2.6) Intercept                                     (unknown)
+##    student_t(3, 0, 2.6)     sigma                                     (unknown)
 ```
 
 
@@ -451,13 +456,13 @@ summary(b2.1)
 ##   Links: mu = identity; sigma = identity 
 ## Formula: Y ~ X + group 
 ##    Data: sim.data (Number of observations: 500) 
-## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-##          total post-warmup samples = 4000
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 ## Intercept     4.80      0.11     4.57     5.03 1.00     1408     1947
-## X            -2.04      0.04    -2.11    -1.96 1.00     7041     3005
+## X            -2.04      0.04    -2.11    -1.96 1.00     7043     3005
 ## groupB        0.03      0.16    -0.30     0.34 1.00     2075     3028
 ## groupC        0.69      0.16     0.37     1.00 1.00     1913     2550
 ## groupD        0.12      0.16    -0.20     0.43 1.00     2079     2803
@@ -466,13 +471,13 @@ summary(b2.1)
 ## groupG        0.38      0.16     0.06     0.69 1.00     2150     2572
 ## groupH       -0.15      0.16    -0.48     0.15 1.00     1881     2404
 ## groupI        0.01      0.16    -0.31     0.31 1.00     1984     2800
-## groupJ       -0.08      0.16    -0.40     0.24 1.00     1947     2735
+## groupJ       -0.08      0.16    -0.40     0.24 1.00     1946     2735
 ## 
 ## Family Specific Parameters: 
 ##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 ## sigma     0.81      0.03     0.76     0.86 1.00     7116     2915
 ## 
-## Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 ## and Tail_ESS are effective sample size measures, and Rhat is the potential
 ## scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
@@ -499,19 +504,19 @@ summary(b2.2)
 ##   Links: mu = identity; sigma = identity 
 ## Formula: Y ~ X 
 ##    Data: sim.data (Number of observations: 500) 
-## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-##          total post-warmup samples = 4000
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-## Intercept     5.03      0.04     4.95     5.11 1.00     3953     2888
-## X            -2.04      0.04    -2.12    -1.96 1.00     3318     2757
+## Intercept     5.03      0.04     4.95     5.11 1.00     3955     2888
+## X            -2.04      0.04    -2.12    -1.96 1.00     3319     2757
 ## 
 ## Family Specific Parameters: 
 ##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 ## sigma     0.87      0.03     0.82     0.92 1.00     3799     2984
 ## 
-## Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 ## and Tail_ESS are effective sample size measures, and Rhat is the potential
 ## scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
@@ -538,8 +543,8 @@ summary(b2.3)
 ##   Links: mu = identity; sigma = identity 
 ## Formula: Y ~ X + (1 | group) 
 ##    Data: sim.data (Number of observations: 500) 
-## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-##          total post-warmup samples = 4000
+##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+##          total post-warmup draws = 4000
 ## 
 ## Group-Level Effects: 
 ## ~group (Number of levels: 10) 
@@ -548,14 +553,14 @@ summary(b2.3)
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-## Intercept     5.04      0.13     4.76     5.32 1.00      850     1246
+## Intercept     5.04      0.13     4.76     5.32 1.00      851     1246
 ## X            -2.04      0.04    -2.11    -1.97 1.00     3933     2922
 ## 
 ## Family Specific Parameters: 
 ##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 ## sigma     0.81      0.03     0.76     0.87 1.00     4015     2803
 ## 
-## Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 ## and Tail_ESS are effective sample size measures, and Rhat is the potential
 ## scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
